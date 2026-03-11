@@ -1,6 +1,6 @@
 """
 Signature Verification System - Model Training
-Dataset: CEDAR Signature Dataset
+Dataset: Custom Signature Dataset
 Algorithm: Random Forest Classifier
 Author: Sairam Odela
 """

@@ -9,7 +9,7 @@ A signature verification system that classifies signatures as Genuine or Forged 
 | Item | Detail |
 |---|---|
 | **Algorithm** | Random Forest Classifier |
-| **Dataset** | CEDAR Signature Dataset |
+| **Dataset** | Custom Signature Dataset |
 | **Features** | HOG, LBP, Geometric, Projection |
 | **Interface** | Flask Web Application |
 | **Language** | Python 3.10+ |
@@ -78,7 +78,7 @@ pip install -r requirements.txt
 ```
 
 ### 3. Prepare dataset
-Download the [CEDAR Signature Dataset](http://www.cedar.buffalo.edu/NIJ/data/) and place images in:
+Collect custom genuine and forged signatures and structure the dataset as follows:
 ```
 data/genuine/   ← genuine signature images
 data/forged/    ← forged signature images
