@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Signature Verification</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+  <style>
+    body { background: #fafafa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #333; }
+    .hero { background: #ffffff; border-bottom: 1px solid #eaeaea; padding: 3rem 0; margin-bottom: 2rem; }
+    .hero h1 { font-weight: 600; font-size: 2.25rem; letter-spacing: -0.5px; }
+    .hero p { color: #666; font-size: 1.1rem; }
+    .upload-card { border: 2px dashed #ccc; border-radius: 8px; padding: 3rem 2rem;
+                   background: #fafafa; text-align: center; cursor: pointer; transition: border-color 0.2s, background-color 0.2s; }
+    .upload-card:hover { border-color: #0056b3; background: #f0f7ff; }
+    #preview { max-width: 100%; max-height: 250px; border-radius: 4px; margin-top: 1rem; display: none; object-fit: contain; }
+    .result-card { border-radius: 8px; display: none; background: #fff; border: 1px solid #eaeaea; }
+    .genuine { border-top: 4px solid #10b981; }
+    .forged { border-top: 4px solid #ef4444; }
+    .progress { height: 8px; border-radius: 4px; background-color: #f0f0f0; }
+    .progress-bar { transition: width 0.6s ease; }
+    .card { border: 1px solid #eaeaea; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+    .btn-primary { background-color: #0f172a; border-color: #0f172a; padding: 0.6rem 1.2rem; font-weight: 500; }
+    .btn-primary:hover { background-color: #1e293b; border-color: #1e293b; }
+    .btn-primary:disabled { background-color: #94a3b8; border-color: #94a3b8; }
+    #uploadPrompt svg { fill: #64748b; margin-bottom: 1rem; }
+    .status-badge { font-size: 1.25rem; font-weight: 600; padding: 0.5rem 1rem; border-radius: 6px; display: inline-block; }
+    .status-genuine { background-color: #ecfdf5; color: #065f46; }
+    .status-forged { background-color: #fef2f2; color: #991b1b; }
+  </style>
+</head>
+<body>
+
+<div class="hero text-center">
+  <div class="container">
+    <h1>Signature Verification</h1>
+    <p class="mt-2">Upload a signature to verify its authenticity</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+
+      <div class="card mb-4">
+        <div class="card-body p-4">
+          <label class="upload-card w-100" for="fileInput">
+            <div id="uploadPrompt">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 16 16">
+                <path d="M.5 9.9a.5.5 0 0 1 .5-.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5z"/>
+                <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+              </svg>
+              <h5 class="mb-1">Select a signature image</h5>
+              <p class="text-muted small mb-0">Drag and drop or click to browse (PNG, JPG, BMP)</p>
+            </div>
+            <img id="preview" alt="Signature preview"/>
+          </label>
+          <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.bmp" class="d-none"/>
+
+          <button id="verifyBtn" class="btn btn-primary w-100 mt-4" disabled>
+            Verify Signature
+          </button>
+        </div>
+      </div>
+
+      <div id="spinner" class="text-center my-4 d-none">
+        <div class="spinner-border text-secondary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3 text-muted small">Analyzing image...</p>
+      </div>
+
+      <div id="resultCard" class="card result-card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h5 class="mb-0 fw-semibold">Analysis Results</h5>
+          <button class="btn btn-sm btn-link text-decoration-none text-muted" onclick="reset()">Reset</button>
+        </div>
+        
+        <div class="text-center mb-4">
+          <div id="resultBadge" class="status-badge mb-2"></div>
+          <div id="confidenceText" class="text-muted small"></div>
+        </div>
+
+        <div class="mb-3">
+          <div class="d-flex justify-content-between small text-muted mb-1">
+            <span>Genuine Probability</span>
+            <span id="genuineVal"></span>
+          </div>
+          <div class="progress">
+            <div id="genuineBar" class="progress-bar bg-success" role="progressbar"></div>
+          </div>
+        </div>
+        
+        <div class="mb-2">
+          <div class="d-flex justify-content-between small text-muted mb-1">
+            <span>Forged Probability</span>
+            <span id="forgedVal"></span>
+          </div>
+          <div class="progress">
+            <div id="forgedBar" class="progress-bar bg-danger" role="progressbar"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="errorAlert" class="alert alert-danger d-none mt-3 border-0 small"></div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const fileInput  = document.getElementById('fileInput');
+  const preview    = document.getElementById('preview');
+  const verifyBtn  = document.getElementById('verifyBtn');
+  const spinner    = document.getElementById('spinner');
+  const resultCard = document.getElementById('resultCard');
+  const errorAlert = document.getElementById('errorAlert');
+  const uploadPrompt = document.getElementById('uploadPrompt');
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = 'inline-block';
+    uploadPrompt.style.display = 'none';
+    verifyBtn.disabled = false;
+    resultCard.style.display = 'none';
+    errorAlert.classList.add('d-none');
+  });
+
+  verifyBtn.addEventListener('click', async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    spinner.classList.remove('d-none');
+    verifyBtn.disabled = true;
+    resultCard.style.display = 'none';
+    errorAlert.classList.add('d-none');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res  = await fetch('/predict', { method: 'POST', body: formData });
+      const data = await res.json();
+      spinner.classList.add('d-none');
+
+      if (data.error) {
+        errorAlert.textContent = data.error;
+        errorAlert.classList.remove('d-none');
+        verifyBtn.disabled = false;
+        return;
+      }
+
+      const isGenuine = data.label === 'Genuine';
+      
+      resultCard.className = `card result-card p-4 ${isGenuine ? 'genuine' : 'forged'}`;
+      
+      const badge = document.getElementById('resultBadge');
+      badge.textContent = isGenuine ? 'Genuine Signature' : 'Forged Signature';
+      badge.className = `status-badge ${isGenuine ? 'status-genuine' : 'status-forged'} mb-2`;
+      
+      document.getElementById('confidenceText').textContent = `Confidence Score: ${data.confidence}%`;
+      document.getElementById('genuineVal').textContent = `${data.genuine_prob}%`;
+      document.getElementById('forgedVal').textContent  = `${data.forged_prob}%`;
+      
+      // Reset width first for animation
+      document.getElementById('genuineBar').style.width = '0%';
+      document.getElementById('forgedBar').style.width = '0%';
+      
+      setTimeout(() => {
+        document.getElementById('genuineBar').style.width = `${data.genuine_prob}%`;
+        document.getElementById('forgedBar').style.width  = `${data.forged_prob}%`;
+      }, 50);
+
+      resultCard.style.display = 'block';
+
+    } catch (err) {
+      spinner.classList.add('d-none');
+      errorAlert.textContent = 'An error occurred during verification. Please try again.';
+      errorAlert.classList.remove('d-none');
+      verifyBtn.disabled = false;
+    }
+  });
+
+  function reset() {
+    fileInput.value = '';
+    preview.style.display = 'none';
+    uploadPrompt.style.display = 'block';
+    resultCard.style.display = 'none';
+    document.getElementById('genuineBar').style.width = '0%';
+    document.getElementById('forgedBar').style.width = '0%';
+    errorAlert.classList.add('d-none');
+    verifyBtn.disabled = true;
+  }
+</script>
+</body>
+</html>
